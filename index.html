@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Responsive Stopwatch</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #121212;
+      color: #ffffff;
+      transition: background-color 0.3s, color 0.3s;
+      position: relative;
+    }
+
+    .input-container {
+      z-index: 10;
+      margin-top: 10px;
+    }
+
+    #number-input {
+      font-size: 1.5rem;
+      padding: 10px;
+      width: 80%;
+      max-width: 300px;
+    }
+
+    .number-display {
+      flex-grow: 1;
+      font-size: 12vw; /* Relative to viewport width */
+      text-align: center;
+      line-height: 1;
+    }
+
+    .stopwatch {
+      flex-grow: 1;
+      font-size: 12vw; /* Relative to viewport width */
+      text-align: center;
+      line-height: 1;
+    }
+
+    button {
+      padding: 15px 30px;
+      font-size: 1.5rem;
+      border: none;
+      border-radius: 5px;
+      background-color: #03dac6;
+      color: #000;
+      cursor: pointer;
+      margin: 10px;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #018786;
+    }
+
+    .hidden-input-area {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5; /* Ensure it overlays the body but stays below buttons and inputs */
+    }
+
+    .light-mode {
+      background-color: #ffffff;
+      color: #000000;
+    }
+  </style>
+</head>
+<body>
+  <div class="input-container">
+    <input id="number-input" type="number" placeholder="Enter a number (minutes)" min="0">
+  </div>
+  <div class="number-display" id="number-display">0</div>
+  <div class="stopwatch" id="stopwatch">00:00:00</div>
+  <div class="hidden-input-area" id="hidden-area"></div>
+
+  <script>
+    const numberInput = document.getElementById("number-input");
+    const numberDisplay = document.getElementById("number-display");
+    const stopwatch = document.getElementById("stopwatch");
+    const hiddenArea = document.getElementById("hidden-area");
+
+    let timer = null;
+    let elapsedSeconds = 0;
+    let isRunning = false;
+    let targetMinutes = 0;
+
+    // Update the displayed number
+    numberInput.addEventListener("input", () => {
+      targetMinutes = parseInt(numberInput.value, 10) || 0;
+      numberDisplay.textContent = targetMinutes;
+    });
+
+    // Update stopwatch display
+    function updateStopwatchDisplay() {
+      const hours = Math.floor(elapsedSeconds / 3600);
+      const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+      const seconds = elapsedSeconds % 60;
+
+      stopwatch.textContent = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+      // Check if elapsed time exceeds the target minutes
+      if (targetMinutes > 0 && elapsedSeconds >= targetMinutes * 60) {
+        document.body.classList.add("light-mode");
+      } else {
+        document.body.classList.remove("light-mode");
+      }
+    }
+
+    // Start/Stop the stopwatch
+    function toggleTimer() {
+      if (isRunning) {
+        clearInterval(timer);
+        isRunning = false;
+      } else {
+        timer = setInterval(() => {
+          elapsedSeconds++;
+          updateStopwatchDisplay();
+        }, 1000);
+        isRunning = true;
+      }
+    }
+
+    // Handle clicks on the hidden area
+    hiddenArea.addEventListener("click", (event) => {
+      // Ignore clicks on the input box
+      const target = event.target;
+      if (target !== numberInput) {
+        toggleTimer();
+      }
+    });
+
+    // Initialize the stopwatch
+    updateStopwatchDisplay();
+  </script>
+</body>
+</html>
