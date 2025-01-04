@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">  
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-
   <title>Responsive Stopwatch</title>
   <style>
     body {
@@ -81,10 +80,10 @@
 </head>
 <body>
   <div class="input-container">
-    <input id="number-input" type="number" placeholder="" min="0">
+    <input id="number-input" type="number" placeholder="Enter a number (minutes)" min="0">
   </div>
   <div class="number-display" id="number-display">0</div>
-  <div class="stopwatch" id="stopwatch">00:00:00</div>
+  <div class="stopwatch" id="stopwatch">00:00:00.000</div>
   <div class="hidden-input-area" id="hidden-area"></div>
 
   <script>
@@ -94,7 +93,7 @@
     const hiddenArea = document.getElementById("hidden-area");
 
     let timer = null;
-    let elapsedSeconds = 0;
+    let elapsedMilliseconds = 0;
     let isRunning = false;
     let targetMinutes = 0;
 
@@ -106,14 +105,16 @@
 
     // Update stopwatch display
     function updateStopwatchDisplay() {
-      const hours = Math.floor(elapsedSeconds / 3600);
-      const minutes = Math.floor((elapsedSeconds % 3600) / 60);
-      const seconds = elapsedSeconds % 60;
+      const totalSeconds = Math.floor(elapsedMilliseconds / 1000);
+      const milliseconds = elapsedMilliseconds % 1000;
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
 
-      stopwatch.textContent = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      stopwatch.textContent = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
 
       // Check if elapsed time exceeds the target minutes
-      if (targetMinutes > 0 && elapsedSeconds >= targetMinutes * 60) {
+      if (targetMinutes > 0 && totalSeconds >= targetMinutes * 60) {
         document.body.classList.add("light-mode");
       } else {
         document.body.classList.remove("light-mode");
@@ -127,9 +128,9 @@
         isRunning = false;
       } else {
         timer = setInterval(() => {
-          elapsedSeconds++;
+          elapsedMilliseconds += 10; // Increment by 10 milliseconds
           updateStopwatchDisplay();
-        }, 1000);
+        }, 10);
         isRunning = true;
       }
     }
