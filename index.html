@@ -70,7 +70,7 @@
     // Update stopwatch display
     function updateStopwatchDisplay() {
       const totalSeconds = Math.floor(elapsedMilliseconds / 1000);
-      const milliseconds = elapsedMilliseconds % 1000;
+      const milliseconds = Math.floor(elapsedMilliseconds % 1000); // Ensure integer value
       const hours = Math.floor(totalSeconds / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = totalSeconds % 60;
