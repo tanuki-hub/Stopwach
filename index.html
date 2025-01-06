@@ -5,7 +5,7 @@
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Responsive Stopwatch</title>
+  <title>Precise Stopwatch</title>
   <style>
     body {
       margin: 0;
@@ -37,9 +37,10 @@
   <script>
     const stopwatch = document.getElementById("stopwatch");
 
-    let timer = null;
+    let startTime = null;
     let elapsedMilliseconds = 0;
     let isRunning = false;
+    let animationFrameId = null;
     let wakeLock = null; // Wake Lock reference
 
     // Request Wake Lock to prevent screen from turning off
@@ -90,19 +91,27 @@
       stopwatch.style.fontSize = `${fontSize}px`;
     }
 
+    // Animation frame loop to update stopwatch
+    function updateTimer() {
+      if (isRunning) {
+        const now = performance.now();
+        elapsedMilliseconds = now - startTime;
+        updateStopwatchDisplay();
+        animationFrameId = requestAnimationFrame(updateTimer);
+      }
+    }
+
     // Start/Stop the stopwatch
     async function toggleTimer() {
       if (isRunning) {
-        clearInterval(timer);
+        cancelAnimationFrame(animationFrameId);
         isRunning = false;
         releaseWakeLock(); // Release Wake Lock when stopped
       } else {
-        timer = setInterval(() => {
-          elapsedMilliseconds += 10; // Increment by 10 milliseconds
-          updateStopwatchDisplay();
-        }, 10);
+        startTime = performance.now() - elapsedMilliseconds; // Account for elapsed time if resumed
         isRunning = true;
         await requestWakeLock(); // Request Wake Lock when started
+        updateTimer(); // Start the animation frame loop
       }
     }
 
