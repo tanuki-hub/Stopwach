@@ -44,7 +44,6 @@
     let isRunning = false;
     let animationFrameId = null;
     let wakeLock = null;
-    let isResetting = false; // リセット中かどうかのフラグ
 
     // Load saved state from localStorage
     function loadState() {
@@ -128,21 +127,19 @@
     }
 
     // Start/Stop the stopwatch
-      async function toggleTimer() {
-        if (isResetting) return; // リセット中なら処理を無効化
-      
-        if (isRunning) {
-          cancelAnimationFrame(animationFrameId);
-          isRunning = false;
-          saveState();
-          releaseWakeLock();
-        } else {
-          startTime = performance.now() - elapsedMilliseconds;
-          isRunning = true;
-          await requestWakeLock();
-          updateTimer();
-        }
+    async function toggleTimer() {
+      if (isRunning) {
+        cancelAnimationFrame(animationFrameId);
+        isRunning = false;
+        saveState();
+        releaseWakeLock();
+      } else {
+        startTime = performance.now() - elapsedMilliseconds;
+        isRunning = true;
+        await requestWakeLock();
+        updateTimer();
       }
+    }
 
     // Reset the stopwatch
     function resetTimer() {
@@ -153,40 +150,21 @@
       clearState();
       releaseWakeLock();
       updateStopwatchDisplay();
-    
-      isResetting = true; // リセット中フラグをオン
-      setTimeout(() => {
-        isResetting = false; // 500ms後に解除
-      }, 500);
     }
 
-    // Handle long press to reset
-    let pressTimer;
-    let isResetting = false; // リセット中フラグ
+    // Handle touch events for swipe down to reset
+    let touchStartY = 0;
 
-    document.body.addEventListener("mousedown", () => {
-      pressTimer = setTimeout(() => {
-        isResetting = true;
-        resetTimer();
-        console.log("Timer reset");
-      }, 3000);
-    });
-    document.body.addEventListener("mouseup", () => {
-      clearTimeout(pressTimer);
-      isResetting = false;
+    document.body.addEventListener("touchstart", (event) => {
+      touchStartY = event.touches[0].clientY;
     });
 
-    // Handle touch events for long press
-    document.body.addEventListener("touchstart", () => {
-      pressTimer = setTimeout(() => {
-        isResetting = true;
-        resetTimer();
-        console.log("Timer reset");
-      }, 3000);
-    });
-    document.body.addEventListener("touchend", () => {
-      clearTimeout(pressTimer);
-      isResetting = false;
+    document.body.addEventListener("touchend", (event) => {
+      const touchEndY = event.changedTouches[0].clientY;
+      if (touchEndY - touchStartY > 50) {
+        resetTimer(); // Swipe down to reset
+        console.log("Timer reset via swipe");
+      }
     });
 
     // Prevent restarting after reset on click
