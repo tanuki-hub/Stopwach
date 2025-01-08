@@ -17,6 +17,8 @@
       background-color: #121212;
       color: #ffffff;
       transition: background-color 0.3s, color 0.3s;
+      user-select: none; /* テキスト選択を無効化 */
+      -webkit-user-select: none; /* Safari 用 */
     }
 
     .stopwatch {
@@ -152,25 +154,38 @@
 
     // Handle long press to reset
     let pressTimer;
+    let isResetting = false; // リセット中フラグ
+
     document.body.addEventListener("mousedown", () => {
       pressTimer = setTimeout(() => {
+        isResetting = true;
         resetTimer();
         console.log("Timer reset");
-      }, 3000); // 3 seconds
+      }, 3000);
     });
     document.body.addEventListener("mouseup", () => {
       clearTimeout(pressTimer);
+      isResetting = false;
     });
 
     // Handle touch events for long press
     document.body.addEventListener("touchstart", () => {
       pressTimer = setTimeout(() => {
+        isResetting = true;
         resetTimer();
         console.log("Timer reset");
-      }, 3000); // 3 seconds
+      }, 3000);
     });
     document.body.addEventListener("touchend", () => {
       clearTimeout(pressTimer);
+      isResetting = false;
+    });
+
+    // Prevent restarting after reset on click
+    document.body.addEventListener("click", (event) => {
+      if (!isResetting) {
+        toggleTimer();
+      }
     });
 
     // Load state on page load
@@ -178,11 +193,6 @@
 
     // Save state before page unload
     window.addEventListener("beforeunload", saveState);
-
-    // Handle click event to toggle the stopwatch
-    document.body.addEventListener("click", (event) => {
-      if (event.detail === 1) toggleTimer();
-    });
 
     updateStopwatchDisplay();
   </script>
