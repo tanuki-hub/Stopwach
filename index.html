@@ -150,42 +150,31 @@
       clearState();
       releaseWakeLock();
       updateStopwatchDisplay();
+      console.log("Timer reset");
     }
 
-    // Handle long press to reset
-    let pressTimer;
-    let isResetting = false; // リセット中フラグ
+    // Handle swipe gesture for reset
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const SWIPE_THRESHOLD = 50; // Minimum swipe distance in pixels
 
-    document.body.addEventListener("mousedown", () => {
-      pressTimer = setTimeout(() => {
-        isResetting = true;
+    document.body.addEventListener("touchstart", (event) => {
+      touchStartX = event.touches[0].clientX; // Record starting X position
+    });
+
+    document.body.addEventListener("touchend", (event) => {
+      touchEndX = event.changedTouches[0].clientX; // Record ending X position
+      const swipeDistance = touchEndX - touchStartX;
+
+      // Check if swipe is a valid reset gesture
+      if (Math.abs(swipeDistance) > SWIPE_THRESHOLD) {
         resetTimer();
-        console.log("Timer reset");
-      }, 3000);
-    });
-    document.body.addEventListener("mouseup", () => {
-      clearTimeout(pressTimer);
-      isResetting = false;
-    });
-
-    // Handle touch events for long press
-    document.body.addEventListener("touchstart", () => {
-      pressTimer = setTimeout(() => {
-        isResetting = true;
-        resetTimer();
-        console.log("Timer reset");
-      }, 3000);
-    });
-    document.body.addEventListener("touchend", () => {
-      clearTimeout(pressTimer);
-      isResetting = false;
-    });
-
-    // Prevent restarting after reset on click
-    document.body.addEventListener("click", (event) => {
-      if (!isResetting) {
-        toggleTimer();
       }
+    });
+
+    // Prevent resetting while toggling the timer
+    document.body.addEventListener("click", (event) => {
+      toggleTimer();
     });
 
     // Load state on page load
