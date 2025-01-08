@@ -152,19 +152,33 @@
       updateStopwatchDisplay();
     }
 
-    // Handle touch events for swipe down to reset
-    let touchStartY = 0;
+    // Handle long press to reset
+    let pressTimer;
+    let isResetting = false; // リセット中フラグ
 
-    document.body.addEventListener("touchstart", (event) => {
-      touchStartY = event.touches[0].clientY;
+    document.body.addEventListener("mousedown", () => {
+      pressTimer = setTimeout(() => {
+        isResetting = true;
+        resetTimer();
+        console.log("Timer reset");
+      }, 3000);
+    });
+    document.body.addEventListener("mouseup", () => {
+      clearTimeout(pressTimer);
+      isResetting = false;
     });
 
-    document.body.addEventListener("touchend", (event) => {
-      const touchEndY = event.changedTouches[0].clientY;
-      if (touchEndY - touchStartY > 50) {
-        resetTimer(); // Swipe down to reset
-        console.log("Timer reset via swipe");
-      }
+    // Handle touch events for long press
+    document.body.addEventListener("touchstart", () => {
+      pressTimer = setTimeout(() => {
+        isResetting = true;
+        resetTimer();
+        console.log("Timer reset");
+      }, 3000);
+    });
+    document.body.addEventListener("touchend", () => {
+      clearTimeout(pressTimer);
+      isResetting = false;
     });
 
     // Prevent restarting after reset on click
