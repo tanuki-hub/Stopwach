@@ -22,7 +22,7 @@
     .stopwatch {
       text-align: center;
       line-height: 1;
-      font-size: 10vw; /* Will be dynamically updated */
+      font-size: 10vw;
     }
 
     .light-mode {
@@ -41,7 +41,37 @@
     let elapsedMilliseconds = 0;
     let isRunning = false;
     let animationFrameId = null;
-    let wakeLock = null; // Wake Lock reference
+    let wakeLock = null;
+
+    // Load saved state from localStorage
+    function loadState() {
+      const savedElapsed = localStorage.getItem("elapsedMilliseconds");
+      const savedStartTime = localStorage.getItem("startTime");
+      const savedRunning = localStorage.getItem("isRunning");
+
+      if (savedElapsed) elapsedMilliseconds = parseInt(savedElapsed, 10);
+      if (savedStartTime) startTime = parseFloat(savedStartTime);
+      if (savedRunning === "true") {
+        isRunning = true;
+        updateTimer();
+        requestWakeLock();
+      }
+      updateStopwatchDisplay();
+    }
+
+    // Save state to localStorage
+    function saveState() {
+      localStorage.setItem("elapsedMilliseconds", elapsedMilliseconds);
+      localStorage.setItem("startTime", startTime);
+      localStorage.setItem("isRunning", isRunning);
+    }
+
+    // Clear saved state
+    function clearState() {
+      localStorage.removeItem("elapsedMilliseconds");
+      localStorage.removeItem("startTime");
+      localStorage.removeItem("isRunning");
+    }
 
     // Request Wake Lock to prevent screen from turning off
     async function requestWakeLock() {
@@ -70,25 +100,18 @@
     // Update stopwatch display
     function updateStopwatchDisplay() {
       const totalSeconds = Math.floor(elapsedMilliseconds / 1000);
-      const milliseconds = Math.floor(elapsedMilliseconds % 1000); // Ensure integer value
+      const milliseconds = Math.floor(elapsedMilliseconds % 1000);
       const hours = Math.floor(totalSeconds / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = totalSeconds % 60;
 
       stopwatch.textContent = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
 
-      // Check if elapsed time exceeds 10 minutes
       if (totalSeconds >= 600) {
         document.body.classList.add("light-mode");
       } else {
         document.body.classList.remove("light-mode");
       }
-    }
-
-    // Adjust font size dynamically based on window size
-    function adjustFontSize() {
-      const fontSize = Math.min(window.innerWidth * 0.1, window.innerHeight * 0.15); // Adjust font size proportionally
-      stopwatch.style.fontSize = `${fontSize}px`;
     }
 
     // Animation frame loop to update stopwatch
@@ -106,26 +129,62 @@
       if (isRunning) {
         cancelAnimationFrame(animationFrameId);
         isRunning = false;
-        releaseWakeLock(); // Release Wake Lock when stopped
+        saveState();
+        releaseWakeLock();
       } else {
-        startTime = performance.now() - elapsedMilliseconds; // Account for elapsed time if resumed
+        startTime = performance.now() - elapsedMilliseconds;
         isRunning = true;
-        await requestWakeLock(); // Request Wake Lock when started
-        updateTimer(); // Start the animation frame loop
+        await requestWakeLock();
+        updateTimer();
       }
     }
 
-    // Handle click event to toggle the stopwatch
-    document.body.addEventListener("click", () => {
-      toggleTimer();
+    // Reset the stopwatch
+    function resetTimer() {
+      cancelAnimationFrame(animationFrameId);
+      elapsedMilliseconds = 0;
+      startTime = null;
+      isRunning = false;
+      clearState();
+      releaseWakeLock();
+      updateStopwatchDisplay();
+    }
+
+    // Handle long press to reset
+    let pressTimer;
+    document.body.addEventListener("mousedown", () => {
+      pressTimer = setTimeout(() => {
+        resetTimer();
+        console.log("Timer reset");
+      }, 3000); // 3 seconds
+    });
+    document.body.addEventListener("mouseup", () => {
+      clearTimeout(pressTimer);
     });
 
-    // Adjust font size on window resize
-    window.addEventListener("resize", adjustFontSize);
+    // Handle touch events for long press
+    document.body.addEventListener("touchstart", () => {
+      pressTimer = setTimeout(() => {
+        resetTimer();
+        console.log("Timer reset");
+      }, 3000); // 3 seconds
+    });
+    document.body.addEventListener("touchend", () => {
+      clearTimeout(pressTimer);
+    });
 
-    // Initialize the stopwatch and font size
+    // Load state on page load
+    window.addEventListener("load", loadState);
+
+    // Save state before page unload
+    window.addEventListener("beforeunload", saveState);
+
+    // Handle click event to toggle the stopwatch
+    document.body.addEventListener("click", (event) => {
+      if (event.detail === 1) toggleTimer();
+    });
+
     updateStopwatchDisplay();
-    adjustFontSize();
   </script>
 </body>
 </html>
