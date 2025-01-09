@@ -69,9 +69,12 @@
       const savedRunning = localStorage.getItem("isRunning");
 
       if (savedElapsed) elapsedMilliseconds = parseInt(savedElapsed, 10);
-      if (savedStartTime) startTime = parseFloat(savedStartTime);
       if (savedRunning === "true") {
         isRunning = true;
+        if (savedStartTime) {
+          const now = performance.now();
+          startTime = now - elapsedMilliseconds; // 正しい経過時間を再計算
+        }
         updateTimer();
         requestWakeLock();
       }
@@ -169,7 +172,7 @@
       updateStopwatchDisplay();
     }
 
-    // Detect swipe for reset
+    // Detect swipe for reset (only on touch devices)
     let startX = 0;
 
     document.body.addEventListener("touchstart", (e) => {
