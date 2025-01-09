@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">  
-  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Precise Stopwatch</title>
@@ -172,31 +170,38 @@
       updateStopwatchDisplay();
     }
 
-    // Detect swipe for reset (only on touch devices)
+    // Detect swipe for reset (touch and mouse)
     let startX = 0;
 
-    document.body.addEventListener("touchstart", (e) => {
-      if (e.touches.length === 1) {
-        startX = e.touches[0].clientX;
+    function startSwipe(event) {
+      if (event.type === "touchstart") {
+        startX = event.touches[0].clientX;
+      } else if (event.type === "mousedown") {
+        startX = event.clientX;
       }
-    });
+    }
 
-    document.body.addEventListener("touchend", (e) => {
-      if (e.changedTouches.length === 1) {
-        const endX = e.changedTouches[0].clientX;
-        const diffX = endX - startX;
+    function endSwipe(event) {
+      let endX = 0;
 
-        if (Math.abs(diffX) > 50) {
-          resetTimer();
-          console.log("Timer reset via swipe");
-        }
+      if (event.type === "touchend") {
+        endX = event.changedTouches[0].clientX;
+      } else if (event.type === "mouseup") {
+        endX = event.clientX;
       }
-    });
 
-    // Prevent restarting after reset on click
-    document.body.addEventListener("click", (event) => {
-      toggleTimer();
-    });
+      const diffX = endX - startX;
+
+      if (Math.abs(diffX) > 50) {
+        resetTimer();
+        console.log("Timer reset via swipe");
+      }
+    }
+
+    document.body.addEventListener("touchstart", startSwipe);
+    document.body.addEventListener("touchend", endSwipe);
+    document.body.addEventListener("mousedown", startSwipe);
+    document.body.addEventListener("mouseup", endSwipe);
 
     // Load state on page load
     window.addEventListener("load", loadState);
