@@ -65,16 +65,12 @@
     // Load saved state from localStorage
     function loadState() {
       const savedElapsed = localStorage.getItem("elapsedMilliseconds");
-      const savedStartTime = localStorage.getItem("startTime");
       const savedRunning = localStorage.getItem("isRunning");
 
       if (savedElapsed) elapsedMilliseconds = parseInt(savedElapsed, 10);
       if (savedRunning === "true") {
         isRunning = true;
-        if (savedStartTime) {
-          const now = performance.now();
-          startTime = now - elapsedMilliseconds; // 正しい経過時間を再計算
-        }
+        startTime = performance.now() - elapsedMilliseconds;
         updateTimer();
         requestWakeLock();
       }
@@ -84,14 +80,12 @@
     // Save state to localStorage
     function saveState() {
       localStorage.setItem("elapsedMilliseconds", elapsedMilliseconds);
-      localStorage.setItem("startTime", startTime);
       localStorage.setItem("isRunning", isRunning);
     }
 
     // Clear saved state
     function clearState() {
       localStorage.removeItem("elapsedMilliseconds");
-      localStorage.removeItem("startTime");
       localStorage.removeItem("isRunning");
     }
 
@@ -100,7 +94,6 @@
       try {
         if ('wakeLock' in navigator) {
           wakeLock = await navigator.wakeLock.request('screen');
-          console.log('Wake Lock activated');
         }
       } catch (err) {
         console.error('Wake Lock failed:', err);
@@ -111,10 +104,7 @@
     function releaseWakeLock() {
       if (wakeLock !== null) {
         wakeLock.release()
-          .then(() => {
-            console.log('Wake Lock released');
-            wakeLock = null;
-          })
+          .then(() => wakeLock = null)
           .catch(err => console.error('Wake Lock release failed:', err));
       }
     }
@@ -174,8 +164,10 @@
 
     // Detect swipe for reset (touch and mouse)
     let startX = 0;
+    let isSwipe = false; // スワイプを検出するフラグ
 
     function startSwipe(event) {
+      isSwipe = false; // スワイプのフラグをリセット
       if (event.type === "touchstart") {
         startX = event.touches[0].clientX;
       } else if (event.type === "mousedown") {
@@ -195,11 +187,20 @@
       const diffX = endX - startX;
 
       if (Math.abs(diffX) > 50) {
+        isSwipe = true; // スワイプと判定
         resetTimer();
         console.log("Timer reset via swipe");
       }
     }
 
+    // タイマー開始/停止のイベント
+    document.body.addEventListener("click", (event) => {
+      if (!isSwipe) {
+        toggleTimer(); // スワイプでない場合のみタイマーを開始/停止
+      }
+    });
+
+    // スワイプ用のイベントリスナー
     document.body.addEventListener("touchstart", startSwipe);
     document.body.addEventListener("touchend", endSwipe);
     document.body.addEventListener("mousedown", startSwipe);
