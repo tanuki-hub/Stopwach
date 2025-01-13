@@ -16,16 +16,17 @@
     html, body {
       width: 100%;
       height: 100%;
-      overflow: hidden; /* スクロールを無効化 */
+      overflow: hidden;
       font-family: Arial, sans-serif;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       background-color: #121212;
       color: #ffffff;
       transition: background-color 0.3s, color 0.3s;
-      user-select: none; /* テキスト選択を無効化 */
-      -webkit-user-select: none; /* Safari 用 */
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .stopwatch-container {
@@ -34,6 +35,7 @@
       align-items: center;
       width: 100%;
       height: 100%;
+      flex-grow: 1;
     }
 
     .stopwatch {
@@ -46,26 +48,54 @@
       background-color: #ffffff;
       color: #000000;
     }
+
+    .settings {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 100;
+      display: flex;
+      gap: 5px;
+    }
+
+    input[type="number"] {
+      width: 60px;
+      padding: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 5px 10px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
+  <div class="settings">
+    <input type="number" id="lightModeThreshold" placeholder="Minutes" min="1">
+    <button onclick="applyThreshold()">Set</button>
+  </div>
   <div class="stopwatch-container">
     <div class="stopwatch" id="stopwatch">00:00:00.000</div>
   </div>
 
   <script>
     const stopwatch = document.getElementById("stopwatch");
+    const lightModeInput = document.getElementById("lightModeThreshold");
 
     let startTime = null;
     let elapsedMilliseconds = 0;
     let isRunning = false;
     let animationFrameId = null;
     let wakeLock = null;
+    let lightModeThreshold = null; // 閾値（分単位）
 
     // Load saved state from localStorage
     function loadState() {
       const savedElapsed = localStorage.getItem("elapsedMilliseconds");
       const savedRunning = localStorage.getItem("isRunning");
+      const savedThreshold = localStorage.getItem("lightModeThreshold");
 
       if (savedElapsed) elapsedMilliseconds = parseInt(savedElapsed, 10);
       if (savedRunning === "true") {
@@ -74,6 +104,11 @@
         updateTimer();
         requestWakeLock();
       }
+      if (savedThreshold) {
+        lightModeThreshold = parseInt(savedThreshold, 10);
+        lightModeInput.value = lightModeThreshold;
+      }
+
       updateStopwatchDisplay();
     }
 
@@ -81,12 +116,16 @@
     function saveState() {
       localStorage.setItem("elapsedMilliseconds", elapsedMilliseconds);
       localStorage.setItem("isRunning", isRunning);
+      if (lightModeThreshold !== null) {
+        localStorage.setItem("lightModeThreshold", lightModeThreshold);
+      }
     }
 
     // Clear saved state
     function clearState() {
       localStorage.removeItem("elapsedMilliseconds");
       localStorage.removeItem("isRunning");
+      localStorage.removeItem("lightModeThreshold");
     }
 
     // Request Wake Lock to prevent screen from turning off
@@ -119,7 +158,7 @@
 
       stopwatch.textContent = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
 
-      if (totalSeconds >= 600) {
+      if (lightModeThreshold !== null && totalSeconds >= lightModeThreshold * 60) {
         document.body.classList.add("light-mode");
       } else {
         document.body.classList.remove("light-mode");
@@ -162,12 +201,24 @@
       updateStopwatchDisplay();
     }
 
+    // Apply light mode threshold from input
+    function applyThreshold() {
+      const value = parseInt(lightModeInput.value, 10);
+      if (!isNaN(value) && value > 0) {
+        lightModeThreshold = value;
+        saveState();
+        updateStopwatchDisplay();
+      } else {
+        alert("Please enter a valid number greater than 0.");
+      }
+    }
+
     // Detect swipe for reset (touch and mouse)
     let startX = 0;
-    let isSwipe = false; // スワイプを検出するフラグ
+    let isSwipe = false;
 
     function startSwipe(event) {
-      isSwipe = false; // スワイプのフラグをリセット
+      isSwipe = false;
       if (event.type === "touchstart") {
         startX = event.touches[0].clientX;
       } else if (event.type === "mousedown") {
@@ -187,32 +238,22 @@
       const diffX = endX - startX;
 
       if (Math.abs(diffX) > 50) {
-        isSwipe = true; // スワイプと判定
+        isSwipe = true;
         resetTimer();
         console.log("Timer reset via swipe");
       }
     }
 
-    // タイマー開始/停止のイベント
+    // Timer toggle event
     document.body.addEventListener("click", (event) => {
       if (!isSwipe) {
-        toggleTimer(); // スワイプでない場合のみタイマーを開始/停止
+        toggleTimer();
       }
     });
 
-    // スワイプ用のイベントリスナー
+    // Swipe event listeners
     document.body.addEventListener("touchstart", startSwipe);
     document.body.addEventListener("touchend", endSwipe);
     document.body.addEventListener("mousedown", startSwipe);
     document.body.addEventListener("mouseup", endSwipe);
 
-    // Load state on page load
-    window.addEventListener("load", loadState);
-
-    // Save state before page unload
-    window.addEventListener("beforeunload", saveState);
-
-    updateStopwatchDisplay();
-  </script>
-</body>
-</html>
