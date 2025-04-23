@@ -16,7 +16,7 @@
     html, body {
       width: 100%;
       height: 100%;
-      overflow: hidden; /* スクロールを無効化 */
+      overflow: hidden;
       font-family: Arial, sans-serif;
       display: flex;
       justify-content: center;
@@ -24,8 +24,8 @@
       background-color: #121212;
       color: #ffffff;
       transition: background-color 0.3s, color 0.3s;
-      user-select: none; /* テキスト選択を無効化 */
-      -webkit-user-select: none; /* Safari 用 */
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .stopwatch-container {
@@ -61,8 +61,8 @@
     let isRunning = false;
     let animationFrameId = null;
     let wakeLock = null;
+    let lastTenMinuteStep = -1;
 
-    // Load saved state from localStorage
     function loadState() {
       const savedElapsed = localStorage.getItem("elapsedMilliseconds");
       const savedRunning = localStorage.getItem("isRunning");
@@ -77,19 +77,16 @@
       updateStopwatchDisplay();
     }
 
-    // Save state to localStorage
     function saveState() {
       localStorage.setItem("elapsedMilliseconds", elapsedMilliseconds);
       localStorage.setItem("isRunning", isRunning);
     }
 
-    // Clear saved state
     function clearState() {
       localStorage.removeItem("elapsedMilliseconds");
       localStorage.removeItem("isRunning");
     }
 
-    // Request Wake Lock to prevent screen from turning off
     async function requestWakeLock() {
       try {
         if ('wakeLock' in navigator) {
@@ -100,7 +97,6 @@
       }
     }
 
-    // Release Wake Lock when stopwatch stops
     function releaseWakeLock() {
       if (wakeLock !== null) {
         wakeLock.release()
@@ -109,7 +105,6 @@
       }
     }
 
-    // Update stopwatch display
     function updateStopwatchDisplay() {
       const totalSeconds = Math.floor(elapsedMilliseconds / 1000);
       const milliseconds = Math.floor(elapsedMilliseconds % 1000);
@@ -119,14 +114,15 @@
 
       stopwatch.textContent = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
 
-      if (totalSeconds >= 600) {
-        document.body.classList.add("light-mode");
-      } else {
-        document.body.classList.remove("light-mode");
+      if (isRunning) {
+        const tenMinuteStep = Math.floor(totalSeconds / 600);
+        if (tenMinuteStep > lastTenMinuteStep) {
+          lastTenMinuteStep = tenMinuteStep;
+          document.body.classList.add("light-mode");
+        }
       }
     }
 
-    // Animation frame loop to update stopwatch
     function updateTimer() {
       if (isRunning) {
         const now = performance.now();
@@ -136,7 +132,6 @@
       }
     }
 
-    // Start/Stop the stopwatch
     async function toggleTimer() {
       if (isRunning) {
         cancelAnimationFrame(animationFrameId);
@@ -144,6 +139,10 @@
         saveState();
         releaseWakeLock();
       } else {
+        // 再開時に背景を黒に戻す
+        document.body.classList.remove("light-mode");
+        lastTenMinuteStep = Math.floor(elapsedMilliseconds / 600000);
+
         startTime = performance.now() - elapsedMilliseconds;
         isRunning = true;
         await requestWakeLock();
@@ -151,7 +150,6 @@
       }
     }
 
-    // Reset the stopwatch
     function resetTimer() {
       cancelAnimationFrame(animationFrameId);
       elapsedMilliseconds = 0;
@@ -159,15 +157,16 @@
       isRunning = false;
       clearState();
       releaseWakeLock();
+      document.body.classList.remove("light-mode");
+      lastTenMinuteStep = -1;
       updateStopwatchDisplay();
     }
 
-    // Detect swipe for reset (touch and mouse)
     let startX = 0;
-    let isSwipe = false; // スワイプを検出するフラグ
+    let isSwipe = false;
 
     function startSwipe(event) {
-      isSwipe = false; // スワイプのフラグをリセット
+      isSwipe = false;
       if (event.type === "touchstart") {
         startX = event.touches[0].clientX;
       } else if (event.type === "mousedown") {
@@ -187,29 +186,24 @@
       const diffX = endX - startX;
 
       if (Math.abs(diffX) > 50) {
-        isSwipe = true; // スワイプと判定
+        isSwipe = true;
         resetTimer();
         console.log("Timer reset via swipe");
       }
     }
 
-    // タイマー開始/停止のイベント
     document.body.addEventListener("click", (event) => {
       if (!isSwipe) {
-        toggleTimer(); // スワイプでない場合のみタイマーを開始/停止
+        toggleTimer();
       }
     });
 
-    // スワイプ用のイベントリスナー
     document.body.addEventListener("touchstart", startSwipe);
     document.body.addEventListener("touchend", endSwipe);
     document.body.addEventListener("mousedown", startSwipe);
     document.body.addEventListener("mouseup", endSwipe);
 
-    // Load state on page load
     window.addEventListener("load", loadState);
-
-    // Save state before page unload
     window.addEventListener("beforeunload", saveState);
 
     updateStopwatchDisplay();
