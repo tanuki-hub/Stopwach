@@ -134,15 +134,18 @@
 
     async function toggleTimer() {
       if (isRunning) {
+        // ⏸ 一時停止時、白背景なら黒に戻す
+        if (document.body.classList.contains("light-mode")) {
+          document.body.classList.remove("light-mode");
+        }
+
         cancelAnimationFrame(animationFrameId);
         isRunning = false;
         saveState();
         releaseWakeLock();
       } else {
-        // 再開時に背景を黒に戻す
-        document.body.classList.remove("light-mode");
+        // ▶ 再開時、10分超えてた場合に備えてstep更新
         lastTenMinuteStep = Math.floor(elapsedMilliseconds / 600000);
-
         startTime = performance.now() - elapsedMilliseconds;
         isRunning = true;
         await requestWakeLock();
